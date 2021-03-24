@@ -43,6 +43,7 @@ class Schema:
         self.docs_theme = DEFAULT_API_THEME
         self.docs_route = docs_route
 
+        # Co(lk): register plugins, api route, doc route
         self.plugins = [MarshmallowPlugin()] if plugins is None else plugins
 
         if self.openapi_version is not None:
@@ -79,7 +80,7 @@ class Schema:
             plugins=self.plugins,
             info=info,
         )
-
+        # Co(lk): loop the routes and resolve api from view_func/endpoint
         for route in self.app.router.routes:
             if route.description:
                 operations = yaml_utils.load_operations_from_docstring(

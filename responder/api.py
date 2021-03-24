@@ -73,8 +73,9 @@ class API:
             static_dir = Path(os.path.abspath(static_dir))
 
         self.static_dir = static_dir
+        # Co(lk): static_route is not a real route instance, but a path
         self.static_route = static_route
-
+        # Co(lk): don't think hsts should be handled by the app.
         self.hsts_enabled = enable_hsts
         self.cors = cors
         self.cors_params = cors_params
@@ -92,8 +93,10 @@ class API:
             os.makedirs(self.static_dir, exist_ok=True)
 
         if self.static_dir is not None:
+            # Co(lk): mount static_app
             self.mount(self.static_route, self.static_app)
 
+        # Co(lk): funcs dict
         self.formats = get_formats()
 
         # Cached requests session.
@@ -101,6 +104,7 @@ class API:
 
         self.default_endpoint = None
         self.app = ExceptionMiddleware(self.router, debug=debug)
+        # WARN(lk): gzip enabled by default
         self.add_middleware(GZipMiddleware)
 
         if self.hsts_enabled:
@@ -130,7 +134,9 @@ class API:
 
         # TODO: Update docs for templates
         self.templates = Templates(directory=templates_dir)
+        # TODO(lk): .requests?
         self.requests = (
+            # Co(lk): session implies requests.Session
             self.session()
         )  #: A Requests session that is connected to the ASGI app.
 
@@ -166,6 +172,7 @@ class API:
 
         return decorator
 
+    # TODO(lk): not used for match in this app
     def path_matches_route(self, path):
         """Given a path portion of a URL, tests that it matches against any registered route.
 

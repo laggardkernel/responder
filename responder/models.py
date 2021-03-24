@@ -184,6 +184,7 @@ class Request:
         """
         return self._starlette.state
 
+    # TODO(lk): wait, async def a property?!
     @property
     async def encoding(self):
         """The encoding of the Request's body. Can be set, manually. Must be awaited."""
@@ -211,6 +212,8 @@ class Request:
 
     @property
     async def declared_encoding(self):
+        # TODO(lk): custom header "Encoding"? If it's ever set, must be in before_request
+        #  may need to add it into the doc
         if "Encoding" in self.headers:
             return self.headers["Encoding"]
 
@@ -239,6 +242,7 @@ class Request:
         """
 
         if format is None:
+            # Co(lk): "yaml" if "yaml" in (self.mimetype or "") else "json"
             format = "yaml" if "yaml" in self.mimetype or "" else "json"
             format = "form" if "form" in self.mimetype or "" else format
 
@@ -274,6 +278,7 @@ class Response:
         "_stream",
     ]
 
+    # Co(lk): operate on self.content and set related mimetype
     text = content_setter("text/plain")
     html = content_setter("text/html")
 
@@ -319,6 +324,8 @@ class Response:
             if self.mimetype is not None:
                 headers["Content-Type"] = self.mimetype
             if self.mimetype == "text/plain" and self.encoding is not None:
+                # TODO(lk): Encoding is returned here. How is it related to
+                #  request. Request try to read Encoding header
                 headers["Encoding"] = self.encoding
                 content = content.encode(self.encoding)
             return (content, headers)
@@ -374,6 +381,7 @@ class Response:
         else:
             response_cls = StarletteResponse
 
+        # Co(lk): response from starlette will send these params
         response = response_cls(body, status_code=self.status_code, headers=headers)
         self._prepare_cookies(response)
 

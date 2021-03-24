@@ -71,6 +71,7 @@ class Route(BaseRoute):
         return f"<Route {self.route!r}={self.endpoint!r}>"
 
     def url(self, **params):
+        # TODO(lk): No addition params support. Additional kwargs as query str in Flask?
         return self.route.format(**params)
 
     @property
@@ -105,12 +106,15 @@ class Route(BaseRoute):
         before_requests = scope.get("before_requests", [])
 
         for before_request in before_requests.get("http", []):
+            # NOTE(lk): the before_request could access the resp holder
             if asyncio.iscoroutinefunction(before_request):
                 await before_request(request, response)
             else:
                 await run_in_threadpool(before_request, request, response)
 
         views = []
+        # NOTE(lk): How could it be possible multiple endpoints be used
+        #  Figured it out. on_request is run for every method.
 
         if inspect.isclass(self.endpoint):
             endpoint = self.endpoint()
@@ -129,6 +133,7 @@ class Route(BaseRoute):
             views.append(self.endpoint)
 
         for view in views:
+            # TODO(lk): typo
             # "Monckey patch" for graphql: explicitly checking __call__
             if asyncio.iscoroutinefunction(view) or asyncio.iscoroutinefunction(
                 view.__call__
@@ -283,6 +288,7 @@ class Router:
     def url_for(self, endpoint, **params):
         # TODO: Check for params
         for route in self.routes:
+            # TODO(lk): seems endpoint could be name str or the func itself
             if endpoint in (route.endpoint, route.endpoint.__name__):
                 return route.url(**params)
         return None
@@ -293,6 +299,8 @@ class Router:
             await websocket_close(receive, send)
             return
 
+        # TODO(lk): cleanup? At first I thought it was used to consume the req.
+        #  But it's not.
         request = Request(scope, receive)
         response = Response(request, formats=get_formats())
 
@@ -300,6 +308,8 @@ class Router:
 
     def _resolve_route(self, scope):
         for route in self.routes:
+            # Co(lk): loop and match the route one by one.
+            #  When matched, return (boolean, {"path_params": {**matched_params}})
             matches, child_scope = route.matches(scope)
             if matches:
                 scope.update(child_scope)
@@ -345,12 +355,14 @@ class Router:
         # Call into a submounted app, if one exists.
         for path_prefix, app in self.apps.items():
             if path.startswith(path_prefix):
+                # Co(lk): rotate root path
                 scope["path"] = path[len(path_prefix) :]
                 scope["root_path"] = root_path + path_prefix
                 try:
                     await app(scope, receive, send)
                     return
                 except TypeError:
+                    # TODO(lk): how could you assume it a wsgi just by TypeError
                     app = WSGIMiddleware(app)
                     await app(scope, receive, send)
                     return

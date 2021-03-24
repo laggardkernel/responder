@@ -84,6 +84,7 @@ codes = {
 }
 
 for number in codes:
+    # Co(lk): tricky. Setup vars in this file with local()
     locals()[f"HTTP_{number}"] = number
 
     for label in codes[number]:
